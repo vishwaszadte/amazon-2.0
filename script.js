@@ -24,7 +24,7 @@ function generateItems(items) {
     let itemsHTML = "";
     items.forEach((item) => {
         let doc = document.createElement("div");
-        doc.classList.add("main-product", "mr-5");
+        doc.classList.add("main-product", "mr-5", "mt-5");
         doc.innerHTML = `
             <div class="product-image w-48 h-52 bg-white rounded-lg">
                                 <img class="w-full h-full object-contain p-4" src="${item.image}" alt="">
