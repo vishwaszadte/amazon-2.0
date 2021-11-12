@@ -1,4 +1,4 @@
-import { getFirestore, doc, getDoc, collection, getDocs, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.4.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, collection, getDocs, setDoc, updateDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/9.4.0/firebase-firestore.js";
 const db = getFirestore();
 
 function getCartItems() {
@@ -17,7 +17,44 @@ function getCartItems() {
             })
         });
         generateCartItems(cartItems);
+        getTotalCost(cartItems);
     });
+}
+
+async function decreaseCount(itemId) {
+    let cartItem = await getDoc(doc(db, "cart-items", itemId));
+    if (cartItem.exists()) {
+        if (cartItem.data().quantity > 1) {
+            updateDoc(doc(db, "cart-items", itemId), {
+                quantity: cartItem.data().quantity - 1
+            });
+        }
+    }
+}
+
+async function increaseCount(itemId) {
+    let cartItem = await getDoc(doc(db, "cart-items", itemId));
+    if (cartItem.exists()) {
+        if (cartItem.data().quantity > 0) {
+            updateDoc(doc(db, "cart-items", itemId), {
+                quantity: cartItem.data().quantity + 1
+            });
+        }
+    }
+}
+
+async function deleteItem(itemId) {
+    await deleteDoc(doc(db, "cart-items", itemId));
+
+}
+
+function getTotalCost(items) {
+    let totalCost = 0;
+    items.forEach((item) => {
+        totalCost += item.quantity * item.price;
+    })
+    // console.log(totalCost);
+    document.querySelector(".total-cost-number").innerHTML = `<span>₹ ${numeral(totalCost).format('0,0')}</span>`;
 }
 
 function generateCartItems(cartItems) {
@@ -37,24 +74,52 @@ function generateCartItems(cartItems) {
                 </div>
             </div>
             <div class="cart-item-counter w-48 flex items-center">
-                <div div="${item.id}" class="chevron-left w-6 h-6 cursor-pointer text-gray-400 bg-gray-100 rounded flex justify-center items-center hover:bg-gray-200 mr-2">
+                <div data-id="${item.id}" class="cart-item-decrease w-6 h-6 cursor-pointer text-gray-400 bg-gray-100 rounded flex justify-center items-center hover:bg-gray-200 mr-2">
                     <i class="fas fa-chevron-left fa-xs"></i>
                 </div>
                 <h4 class="text-gray-400">x${item.quantity}</h4>
-                <div class="chevron-right w-6 h-6 cursor-pointer text-gray-400 bg-gray-100 rounded flex justify-center items-center hover:bg-gray-200 ml-2">
+                <div data-id="${item.id}" class="cart-item-increase w-6 h-6 cursor-pointer text-gray-400 bg-gray-100 rounded flex justify-center items-center hover:bg-gray-200 ml-2">
                     <i class="fas fa-chevron-right fa-xs"></i>
                 </div>
             </div>
             <div class="cart-item-total-cost w-48 font-bold text-gray-400">
-                <span>₹ ${item.price * item.quantity}</span>
+                <span>₹ ${
+                    numeral(item.price * item.quantity).format('0,0')}</span>
             </div>
-            <div class="cart-item-delete w-10 font-bold text-gray-200 cursor-pointer hover:text-gray-400">
+            <div data-id="${item.id}" class="cart-item-delete w-10 font-bold text-gray-200 cursor-pointer hover:text-gray-400">
                 <i class="fas fa-times"></i>
             </div>
         </div>
         `;
     })
     document.querySelector(".cart-items").innerHTML = itemsHTML;
+    createEventListeners();
+}
+
+function createEventListeners() {
+    let decreaseButtons = document.querySelectorAll(".cart-item-decrease");
+    let increaseButtons = document.querySelectorAll(".cart-item-increase");
+    let deleteButtons = document.querySelectorAll(".cart-item-delete");
+
+    // console.log(deleteButtons);
+
+    decreaseButtons.forEach((button) => {
+        button.addEventListener("click", function() {
+            decreaseCount(button.dataset.id);
+        })
+    })
+
+    increaseButtons.forEach((button) => {
+        button.addEventListener("click", function() {
+            increaseCount(button.dataset.id);
+        })
+    })
+
+    deleteButtons.forEach((button) => {
+        button.addEventListener("click", function() {
+            deleteItem(button.dataset.id);
+        })
+    })
 }
 
 getCartItems();
